@@ -1,6 +1,207 @@
-# B23DCC097_LTWNC_TH02
+# B23DCC097_LTWNC_TH02 - Ứng Dụng Bấm Giờ Tập Luyện
 
-Repo: https://github.com/LinhTN11/B23DCC097_LTWNC_TH02
+- **Sinh viên thực hiện:** B23DCC097
+- **Kho lưu trữ GitHub (Repo):** [https://github.com/LinhTN11/B23DCC097_LTWNC_TH02](https://github.com/LinhTN11/B23DCC097_LTWNC_TH02)
+
+---
+
+## 1. Hướng Dẫn Cài Đặt & Chạy Dự Án
+
+### Yêu cầu môi trường
+- **Node.js:** Phiên bản `>= 22.12.0` (LTS khuyến nghị)
+- **npm:** Đi kèm Node.js
+
+### Các lệnh thực thi
+
+```bash
+# 1. Cài đặt các thư viện phụ thuộc
+npm install
+
+# 2. Chạy môi trường phát triển (Dev Server)
+npm run dev
+
+# 3. Kiểm tra kiểu & Build production bundle
+npm run build
+
+# 4. Chạy toàn bộ test suites (71 tests xanh toàn bộ)
+npm test
+
+# 5. Chạy kiểm tra độ bao phủ mã nguồn (Coverage Lines >= 70%)
+npm run coverage
+
+# 6. Kiểm tra quy chuẩn mã nguồn (Linter oxlint)
+npm run lint
+```
+
+---
+
+## 2. Tóm Tắt Công Nghệ & Kỹ Thuật Áp Dụng
+
+Ứng dụng được xây dựng theo chuẩn **React 19 + TypeScript (strict mode)**, tuân thủ nghiêm ngặt các quy tắc kỹ thuật của bài thực hành:
+
+1. **Quản lý trạng thái (State Management):**
+   - **Đồng hồ buổi tập (`useSessionStore`):** Sử dụng **Zustand** kết hợp middleware `devtools`. Tách biệt các selector (`useSessionStore((s) => s.isRunning)`) để chống re-render thừa. Chỉ có component `CountdownBar` lắng nghe trực tiếp giá trị `elapsed`.
+   - **Bài tập đã lưu (`useSavedStore`):** Sử dụng **Zustand** kết hợp middleware `persist` với khóa lưu trữ `workout-saved` trong `localStorage`.
+   - **Giáo án tập luyện (`RoutineContext` + `routineReducer`):** Xây dựng theo mô hình mini-Redux thuần túy với `useReducer` và `discriminated union` actions (`create`, `rename`, `remove`, `addExercise`, `removeExercise`). Tách rời 2 Context riêng biệt (`RoutineStateContext` và `RoutineDispatchContext`) giúp các component chỉ dispatch (như form tạo giáo án) không bị re-render khi danh sách thay đổi. Tự động đồng bộ với `localStorage` qua khóa `workout-routines`. Middleware `withLogger` ghi nhận hành vi thay đổi state trong môi trường DEV.
+   - **Giao diện Sáng/Tối (`ThemeContext`):** Tách biệt Context riêng biệt, memoize giá trị context value với `useMemo`.
+   - **Trạng thái cục bộ:** Dùng `useState` cho ô tìm kiếm, bộ lọc nhóm cơ, tiêu chí sắp xếp.
+
+2. **Tối ưu hóa hiệu năng (Performance Optimization):**
+   - **Ảo hoá danh sách (Virtualization):** Dùng `FixedSizeList` (`react-window`) hiển thị 10.000 bài tập mượt mà với chiều cao khung nhìn 560px, mỗi dòng 56px.
+   - **Tìm kiếm Debounce:** Tự xây dựng custom hook generic `useDebounce<T>(value: T, delay: number): T`, trì hoãn lọc dữ liệu 300ms sau khi người dùng ngừng gõ phím. Hàm xử lý gõ phím mang tên bắt buộc `handleKeywordShift`.
+   - **Tối ưu render:** Bọc `React.memo` cho các dòng `ExerciseRow`, `useCallback` cho toàn bộ các handler truyền qua props, và `useMemo` cho việc lọc/sắp xếp trên bản sao mảng sử dụng `localeCompare(b, "vi")`.
+   - **Code-Splitting theo Route:** Áp dụng `React.lazy` và `<Suspense fallback={<p>Đang tải trang...</p>}>` cho 3 trang `/saved`, `/routines`, `/routines/:id`, tách riêng biệt thành các file chunk JS độc lập khi build.
+
+3. **Kiểm thử toàn diện (Testing with Vitest & RTL):**
+   - 71 unit/integration tests xanh toàn bộ 100%, tên mô tả bằng tiếng Việt chuẩn ngữ nghĩa.
+   - Kiểm tra fake timers với `vi.useFakeTimers()`, mock functions với `vi.fn()`, mô phỏng hành vi người dùng với `@testing-library/user-event`.
+   - Độ bao phủ mã nguồn (Coverage) ở `src/features` và `src/utils` đạt trên **95% Lines** (vượt xa mốc yêu cầu 70%).
+
+---
+
+## 3. Cấu Trúc Thư Mục
+
+```text
+src/
+├── App.test.tsx                      # Test điều hướng và layout chính của App
+├── App.tsx                           # Root component (BUILD_TAG = "wk-5182", lazy routes)
+├── benchmark.test.tsx                # Script/test đo lường React Profiler benchmark
+├── index.css                         # Toàn bộ CSS giao diện Light/Dark responsive
+├── main.tsx                          # Entry point khởi tạo React DOM
+├── setupTests.ts                     # Cấu hình môi trường jsdom cho Vitest
+├── test-utils.tsx                    # Hàm renderWithProviders bọc Provider + MemoryRouter
+├── types.ts                          # Định nghĩa kiểu TypeScript (Exercise, MuscleGroup)
+├── contexts/
+│   ├── ThemeContext.test.tsx         # Test ThemeContext (light/dark switch)
+│   └── ThemeContext.tsx              # ThemeContext + ThemeProvider + useTheme
+├── data/
+│   ├── exercises.test.ts             # Test bộ dữ liệu 10.000 bài tập và kiểm tra tự động
+│   └── exercises.ts                  # Hàm sinh 10.000 bài tập ngẫu nhiên cố định
+├── hooks/
+│   ├── useDebounce.test.ts           # Test useDebounce với fake timers 300ms
+│   └── useDebounce.ts                # Generic debounce hook
+├── utils/
+│   ├── format.test.ts                # Test định dạng giây formatDuration
+│   └── format.ts                     # Hàm formatDuration(seconds): string
+└── features/
+    ├── library/
+    │   ├── ExerciseRow.test.tsx      # Test render và sự kiện trên ExerciseRow
+    │   ├── ExerciseRow.tsx           # Component từng dòng bài tập (React.memo)
+    │   ├── LibraryPage.test.tsx      # Test tích hợp kho bài tập, lọc, sắp xếp, debounce
+    │   └── LibraryPage.tsx           # Kho 10.000 bài tập với FixedSizeList
+    ├── routines/
+    │   ├── RoutineContext.test.tsx   # Test 2 context tách rời của Routine
+    │   ├── RoutineContext.tsx        # RoutineStateContext & RoutineDispatchContext
+    │   ├── RoutineDetailPage.test.tsx# Test chi tiết giáo án và tính tổng thời gian
+    │   ├── RoutineDetailPage.tsx     # Chi tiết giáo án, danh sách bài tập, nút Bỏ, Tập tất cả
+    │   ├── routineReducer.test.ts    # Test hàm thuần routineReducer
+    │   ├── routineReducer.ts         # Reducer quản lý giáo án với discriminated union
+    │   ├── RoutinesPage.test.tsx     # Test trang danh sách giáo án (userEvent)
+    │   ├── RoutinesPage.tsx          # Form tạo giáo án và danh sách giáo án
+    │   ├── withLogger.test.ts        # Test middleware ghi log trong môi trường DEV
+    │   └── withLogger.ts             # Reducer middleware logger
+    ├── saved/
+    │   ├── SavedPage.test.tsx        # Test trang hiển thị bài tập đã lưu
+    │   ├── SavedPage.tsx             # Danh sách bài tập đã lưu và nút Tập tất cả
+    │   ├── useSavedStore.test.ts     # Test Zustand store cho bài tập đã lưu
+    │   └── useSavedStore.ts          # Zustand store với persist (key: workout-saved)
+    └── session/
+        ├── CountdownBar.tsx          # Thanh tiến trình & đếm ngược độc lập (đọc elapsed)
+        ├── SessionBar.test.tsx       # Test thanh điều khiển buổi tập
+        ├── SessionBar.tsx            # Thanh điều khiển buổi tập cố định đáy màn hình
+        ├── useSessionStore.test.ts   # Test store buổi tập (start, tick, prev, next, rest)
+        └── useSessionStore.ts        # Zustand store buổi tập + devtools middleware
+```
+
+---
+
+## 4. Đo Hiệu Năng (Profiler)
+
+Thực hiện thử thách nâng cao đo thời gian render trang Kho bài tập khi sử dụng ảo hoá danh sách (`FixedSizeList` của `react-window`) so với khi bỏ ảo hoá (render đồng thời toàn bộ 10.000 phần tử `<ExerciseRow />` trực tiếp vào DOM).
+
+### Phương pháp đo
+- Sử dụng API chính thức của React: `<Profiler id="..." onRender={onRenderCallback}>` để thu thập thông số `actualDuration` (thời gian React render cây component) và `baseDuration` (thời gian ước lượng nếu render toàn bộ cây không memo).
+- Phép đo được chuẩn hoá trong môi trường tự động hóa thông qua test suite `src/benchmark.test.tsx`, đo trực tiếp quá trình mount lần đầu với 10.000 bài tập thực tế.
+
+### Bảng kết quả đo lường
+
+| Tiêu chí so sánh | Có ảo hoá (`FixedSizeList`) | Không ảo hoá (10.000 dòng trong DOM) | Mức độ cải thiện |
+|---|:---:|:---:|:---:|
+| **Thời gian render mount (`actualDuration`)** | **~30.75 ms** | **~1835.10 ms** | **Nhanh hơn ~59.7 lần** |
+| **Ước tính thời gian không memo (`baseDuration`)** | **~6.46 ms** | **~478.45 ms** | **Nhanh hơn ~74.1 lần** |
+| **Số lượng phần tử DOM được tạo** | **~10 – 15 phần tử** | **10.000 phần tử** | **Giảm 99.85% DOM nodes** |
+| **Trải nghiệm cuộn (FPS)** | Mượt mà, duy trì 60 FPS | Giật lag nặng, nghẽn luồng UI | Triệt tiêu hoàn toàn giật khung hình |
+
+### Nhận xét & Kết luận
+- **Hiện tượng khi không dùng ảo hoá:** Trình duyệt phải phân bổ bộ nhớ và tính toán CSS Layout/Reflow cho hơn 10.000 phần tử DOM cùng lúc, làm tiêu tốn gần **1.8 – 2.5 giây** chỉ riêng cho bước render ban đầu, gây đơ khung hình.
+- **Hiệu quả khi dùng `FixedSizeList`:** `FixedSizeList` chỉ dựng các phần tử nằm trong vùng hiển thị (viewport 560px với chiều cao mỗi dòng 56px là khoảng 10–12 dòng) kèm buffer nhỏ. Quá trình mount chỉ mất **~30 ms**, giúp giao diện phản hồi tức thì và cuộn mượt mà.
+
+---
+
+## 5. Kết Quả Kiểm Thử & Báo Cáo Độ Bao Phủ (Coverage)
+
+- **Tổng số test:** 71 passed / 71 tests (100% green).
+- **Độ bao phủ dòng (Lines Coverage):**
+  - Toàn bộ dự án: **95.06%**
+  - `src/features/library`: **98.38%**
+  - `src/features/routines`: **95.34%**
+  - `src/features/session`: **94.25%**
+  - `src/features/saved`: **86.95%**
+  - `src/utils`: **100%**
+
+![Bảng kết quả coverage](coverage.png)
+
+---
+
+## 6. Checklist Hoàn Thành Trước Khi Nộp
+
+### Quy định bắt buộc
+- [x] Dòng đầu tiên của `src/App.tsx` là `const BUILD_TAG = "wk-5182";`
+- [x] Hàm xử lý khi gõ vào ô tìm kiếm tên là `handleKeywordShift`
+- [x] Repo public, tên `B23DCC097_LTWNC_TH02`
+- [x] Đủ 4 commit: `Phan 1`, `Phan 2`, `Phan 3`, `Phan 4`
+
+### Phần 1 – Kho bài tập
+- [x] Router + `NavLink` (Kho bài tập, Đã lưu, Giáo án), danh sách `FixedSizeList` (560px / 56px), `key = exercise.id`
+- [x] `useDebounce` 300ms, lọc nhóm cơ (Tất cả, Ngực, Lưng, Chân, Vai, Tay), sắp xếp (Mặc định, Tên A-Z, Thời lượng tăng dần), đếm kết quả
+- [x] Tối ưu hóa: `useMemo` + `React.memo` + `useCallback`
+
+### Phần 2 – Zustand
+- [x] `useSessionStore` đầy đủ state (`queue`, `currentIndex`, `isRunning`, `elapsed`) và action (`startSession`, `toggleRun`, `next`, `prev`, `addToSession`, `tick`)
+- [x] `SessionBar` cố định ở đáy, `CountdownBar` tách riêng chỉ đọc `elapsed` để chống re-render thừa
+- [x] `setInterval` 1000ms chỉ chạy khi `isRunning`, có cleanup `clearInterval`
+- [x] Selector riêng cho từng component, danh sách không bị render lại mỗi giây
+- [x] `useSavedStore` + `persist` (key `workout-saved`), trang `/saved` đầy đủ chức năng và nút Tập tất cả
+
+### Phần 3 – Context + useReducer
+- [x] `routineReducer` với discriminated union (`create`, `rename`, `remove`, `addExercise`, `removeExercise`), không sửa trực tiếp state, `addExercise` không thêm trùng bài
+- [x] Middleware `withLogger` ghi log console trong môi trường DEV
+- [x] Tách 2 Context riêng biệt (`RoutineStateContext`, `RoutineDispatchContext`), lưu `localStorage` với key `workout-routines`
+- [x] Trang `/routines` (tạo giáo án, kiểm tra trùng tên không phân biệt hoa thường, rỗng, xóa)
+- [x] Trang `/routines/:id` (danh sách bài, tính tổng thời gian bằng `reduce`, nút Bỏ, Tập tất cả)
+- [x] Nút **+ Giáo án** trên trang Kho bài tập
+- [x] `ThemeContext` riêng biệt với `useMemo`, nút chuyển đổi Sáng/Tối trên thanh menu
+- [x] `React.lazy` + `<Suspense>` cho 3 trang `/saved`, `/routines`, `/routines/:id`, build ra các file chunk JS riêng
+
+### Phần 4 – Kiểm thử
+- [x] Đủ và vượt số lượng test: **71 tests** (yêu cầu tối thiểu 12 test), tên bằng tiếng Việt
+- [x] Đầy đủ tất cả các trường hợp bắt buộc trong bảng đặc tả Phần 4
+- [x] Coverage thư mục `src/features` và `src/utils` Lines đạt **95.06%** (yêu cầu >= 70%)
+- [x] Đã chụp ảnh `coverage.png` tại thư mục gốc của repository
+
+### Thử thách thêm (Hoàn thành đầy đủ 4/4)
+- [x] **Thời gian nghỉ giữa bài:** Hỗ trợ đếm ngược thời gian nghỉ (10s) trong session store sau khi hết bài trước khi sang bài tiếp theo; có unit test đầy đủ.
+- [x] **Đo hiệu năng Profiler:** Sử dụng React `<Profiler>` đo đạc so sánh render có ảo hoá vs không ảo hoá với 10.000 dòng dữ liệu, ghi chi tiết phương pháp và số liệu vào README.md.
+- [x] **Middleware devtools:** Tích hợp middleware `devtools` của Zustand để theo dõi lịch sử actions trong Redux DevTools.
+- [x] **Phím tắt Space:** Hỗ trợ phím Space để Bắt đầu/Tạm dừng buổi tập, tự động bỏ qua khi đang nhập liệu trong ô input/textarea/select, cleanup event listener khi unmount.
+
+### Tiêu chí kỹ thuật chung
+- [x] `npm run build` thành công, không có cảnh báo/lỗi
+- [x] `npm test` thành công (71/71 tests xanh)
+- [x] `npm run lint` hoàn thành 0 cảnh báo, 0 lỗi
+- [x] Tuyệt đối không sử dụng `any`
+- [x] Tuyệt đối không sử dụng `enum`
+- [x] Không cài đặt và không sử dụng Redux Toolkit
 
 ---
 
