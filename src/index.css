@@ -72,7 +72,7 @@ body {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 24px 16px 120px;
 }
 
 /* Page Header */
@@ -274,3 +274,134 @@ body {
 .routine-detail-page {
   padding: 16px 0;
 }
+
+/* Saved Page */
+.saved-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.no-saved-msg {
+  color: var(--text-muted);
+  font-size: 15px;
+  padding: 32px 0;
+}
+
+.saved-list {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.saved-list .exercise-row {
+  min-height: 56px;
+}
+
+/* Session Bar */
+.session-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #ffffff;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  padding: 12px 24px;
+}
+
+.session-bar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.session-info {
+  flex: 1.5;
+  min-width: 220px;
+}
+
+.session-exercise-info {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.countdown-bar {
+  flex: 2;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-remaining {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.session-rest {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.progress-track {
+  width: 100%;
+  max-width: 260px;
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.progress-fill.resting {
+  background-color: #dc2626;
+}
+
+.session-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-controls .btn-toggle {
+  min-width: 90px;
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.session-controls .btn-toggle:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.session-queue-meta {
+  flex: 1;
+  text-align: right;
+  min-width: 120px;
+}
+
+.session-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+

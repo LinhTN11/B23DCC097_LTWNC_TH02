@@ -35,4 +35,14 @@ describe('App navigation', () => {
 
     expect(await screen.findByText('Danh sách giáo án')).toBeInTheDocument();
   });
+
+  it('thanh đồng hồ SessionBar xuất hiện cố định ở đáy ứng dụng', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('region', { name: 'Thanh đồng hồ buổi tập' })).toBeInTheDocument();
+  });
 });

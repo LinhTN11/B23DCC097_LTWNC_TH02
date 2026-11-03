@@ -2,6 +2,7 @@ const BUILD_TAG = "wk-5182";
 import { lazy, Suspense } from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
 import LibraryPage from './features/library/LibraryPage';
+import SessionBar from './features/session/SessionBar';
 
 const SavedPage = lazy(() => import('./features/saved/SavedPage'));
 const RoutinesPage = lazy(() => import('./features/routines/RoutinesPage'));
@@ -42,6 +43,8 @@ export function App() {
           </Routes>
         </Suspense>
       </main>
+
+      <SessionBar />
     </div>
   );
 }

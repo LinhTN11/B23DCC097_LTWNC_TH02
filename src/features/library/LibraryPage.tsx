@@ -5,22 +5,32 @@ import type { ListChildComponentProps } from 'react-window';
 import { EXERCISES, GROUPS } from '../../data/exercises';
 import type { Exercise } from '../../types';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useSessionStore } from '../session/useSessionStore';
+import { useSavedStore } from '../saved/useSavedStore';
 import { ExerciseRow } from './ExerciseRow';
 
 interface ItemData {
   items: Exercise[];
-  onStart: (exercise: Exercise) => void;
+  savedIdsSet: Set<string>;
+  onStart: (exercise: Exercise, index: number) => void;
+  onToggleSave: (exercise: Exercise) => void;
+  onAddToSession: (exercise: Exercise) => void;
 }
 
 const Row = memo(function Row({ index, style, data }: ListChildComponentProps<ItemData>) {
   const exercise = data.items[index];
   if (!exercise) return null;
+  const isSaved = data.savedIdsSet.has(exercise.id);
+
   return (
     <ExerciseRow
       exercise={exercise}
       index={index}
       style={style}
-      onStart={data.onStart}
+      isSaved={isSaved}
+      onStart={(ex) => data.onStart(ex, index)}
+      onToggleSave={data.onToggleSave}
+      onAddToSession={data.onAddToSession}
     />
   );
 });
@@ -29,6 +39,9 @@ export function LibraryPage() {
   const [keyword, setKeyword] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'default' | 'name-asc' | 'duration-asc'>('default');
+
+  const savedIds = useSavedStore((s) => s.ids);
+  const savedIdsSet = useMemo(() => new Set(savedIds), [savedIds]);
 
   const debouncedKeyword = useDebounce(keyword, 300);
 
@@ -43,11 +56,6 @@ export function LibraryPage() {
   const handleSortChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setSortBy(e.target.value as 'default' | 'name-asc' | 'duration-asc');
   };
-
-  const handleStart = useCallback((exercise: Exercise) => {
-    // Placeholder callback for starting a session (wired up in Part 2)
-    void exercise;
-  }, []);
 
   const filteredExercises = useMemo(() => {
     let list = EXERCISES;
@@ -76,12 +84,30 @@ export function LibraryPage() {
     return list;
   }, [debouncedKeyword, selectedGroup, sortBy]);
 
+  const handleStart = useCallback(
+    (_exercise: Exercise, index: number) => {
+      useSessionStore.getState().startSession(filteredExercises, index);
+    },
+    [filteredExercises],
+  );
+
+  const handleToggleSave = useCallback((exercise: Exercise) => {
+    useSavedStore.getState().toggle(exercise.id);
+  }, []);
+
+  const handleAddToSession = useCallback((exercise: Exercise) => {
+    useSessionStore.getState().addToSession(exercise);
+  }, []);
+
   const itemData = useMemo<ItemData>(
     () => ({
       items: filteredExercises,
+      savedIdsSet,
       onStart: handleStart,
+      onToggleSave: handleToggleSave,
+      onAddToSession: handleAddToSession,
     }),
-    [filteredExercises, handleStart],
+    [filteredExercises, savedIdsSet, handleStart, handleToggleSave, handleAddToSession],
   );
 
   return (

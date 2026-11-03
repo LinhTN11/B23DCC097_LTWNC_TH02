@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import LibraryPage from './LibraryPage';
+import { useSessionStore } from '../session/useSessionStore';
+import { useSavedStore } from '../saved/useSavedStore';
 
 describe('LibraryPage', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    useSavedStore.setState({ ids: [] });
+    useSessionStore.setState({
+      queue: [],
+      currentIndex: -1,
+      isRunning: false,
+      elapsed: 0,
+      restRemaining: 0,
+    });
   });
 
   afterEach(() => {
@@ -83,5 +93,38 @@ describe('LibraryPage', () => {
 
     fireEvent.change(sortSelect, { target: { value: 'default' } });
     expect(screen.getByText('Tìm thấy 10000 bài tập')).toBeInTheDocument();
+  });
+
+  it('bấm Bắt đầu ở một dòng khởi tạo buổi tập với danh sách đang hiển thị', () => {
+    render(<LibraryPage />);
+
+    const startButtons = screen.getAllByRole('button', { name: 'Bắt đầu' });
+    fireEvent.click(startButtons[0]);
+
+    const sessionState = useSessionStore.getState();
+    expect(sessionState.queue.length).toBe(10000);
+    expect(sessionState.currentIndex).toBe(0);
+    expect(sessionState.isRunning).toBe(true);
+  });
+
+  it('bấm + Buổi tập thêm bài tập vào danh sách buổi tập', () => {
+    render(<LibraryPage />);
+
+    const sessionButtons = screen.getAllByRole('button', { name: '+ Buổi tập' });
+    fireEvent.click(sessionButtons[0]);
+
+    const sessionState = useSessionStore.getState();
+    expect(sessionState.queue.length).toBe(1);
+    expect(sessionState.queue[0].id).toBe('e1');
+  });
+
+  it('bấm nút Lưu bài tập đổi trạng thái sao và cập nhật useSavedStore', () => {
+    render(<LibraryPage />);
+
+    const saveButtons = screen.getAllByRole('button', { name: 'Lưu bài tập' });
+    expect(saveButtons[0]).toHaveTextContent('☆');
+
+    fireEvent.click(saveButtons[0]);
+    expect(useSavedStore.getState().ids).toContain('e1');
   });
 });
