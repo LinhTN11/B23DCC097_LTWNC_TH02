@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
 import LibraryPage from './LibraryPage';
 import { useSessionStore } from '../session/useSessionStore';
 import { useSavedStore } from '../saved/useSavedStore';
+import { renderWithProviders } from '../../test-utils';
+import type { Routine } from '../routines/routineReducer';
 
 describe('LibraryPage', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    localStorage.clear();
     useSavedStore.setState({ ids: [] });
     useSessionStore.setState({
       queue: [],
@@ -22,12 +25,12 @@ describe('LibraryPage', () => {
   });
 
   it('mặc định hiển thị "Tìm thấy 10000 bài tập"', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
     expect(screen.getByText('Tìm thấy 10000 bài tập')).toBeInTheDocument();
   });
 
   it('gõ "đẩy": trong lúc gõ chưa đổi, sau 300ms hiển thị "Tìm thấy 1250 bài tập"', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
     const searchInput = screen.getByLabelText('Tìm kiếm');
 
     fireEvent.change(searchInput, { target: { value: 'đẩy' } });
@@ -43,7 +46,7 @@ describe('LibraryPage', () => {
   });
 
   it('lọc "đẩy" và chọn nhóm cơ "Vai" tìm thấy 250 bài tập', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
     const searchInput = screen.getByLabelText('Tìm kiếm');
     const groupSelect = screen.getByLabelText('Nhóm cơ');
 
@@ -58,7 +61,7 @@ describe('LibraryPage', () => {
   });
 
   it('xóa ô tìm kiếm, chọn Tất cả, gõ "đức anh" tìm thấy 1000 bài tập theo HLV', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
     const searchInput = screen.getByLabelText('Tìm kiếm');
 
     fireEvent.change(searchInput, { target: { value: 'đức anh' } });
@@ -70,7 +73,7 @@ describe('LibraryPage', () => {
   });
 
   it('gõ "xyz" hiển thị "Không tìm thấy bài tập nào"', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
     const searchInput = screen.getByLabelText('Tìm kiếm');
 
     fireEvent.change(searchInput, { target: { value: 'xyz' } });
@@ -82,7 +85,7 @@ describe('LibraryPage', () => {
   });
 
   it('sắp xếp theo Tên A–Z và Thời lượng tăng dần hoạt động', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
     const sortSelect = screen.getByLabelText('Sắp xếp');
 
     fireEvent.change(sortSelect, { target: { value: 'name-asc' } });
@@ -96,7 +99,7 @@ describe('LibraryPage', () => {
   });
 
   it('bấm Bắt đầu ở một dòng khởi tạo buổi tập với danh sách đang hiển thị', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
 
     const startButtons = screen.getAllByRole('button', { name: 'Bắt đầu' });
     fireEvent.click(startButtons[0]);
@@ -108,7 +111,7 @@ describe('LibraryPage', () => {
   });
 
   it('bấm + Buổi tập thêm bài tập vào danh sách buổi tập', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
 
     const sessionButtons = screen.getAllByRole('button', { name: '+ Buổi tập' });
     fireEvent.click(sessionButtons[0]);
@@ -119,12 +122,46 @@ describe('LibraryPage', () => {
   });
 
   it('bấm nút Lưu bài tập đổi trạng thái sao và cập nhật useSavedStore', () => {
-    render(<LibraryPage />);
+    renderWithProviders(<LibraryPage />);
 
     const saveButtons = screen.getAllByRole('button', { name: 'Lưu bài tập' });
     expect(saveButtons[0]).toHaveTextContent('☆');
 
     fireEvent.click(saveButtons[0]);
     expect(useSavedStore.getState().ids).toContain('e1');
+  });
+
+  it('khi chưa có giáo án thì nút + Giáo án bị vô hiệu hóa', () => {
+    renderWithProviders(<LibraryPage />, { initialRoutines: [] });
+
+    const routineSelect = screen.getByLabelText('Giáo án đang chọn');
+    expect(routineSelect).toBeDisabled();
+
+    const routineButtons = screen.getAllByRole('button', { name: '+ Giáo án' });
+    expect(routineButtons[0]).toBeDisabled();
+  });
+
+  it('khi có giáo án thì có thể chọn giáo án và bấm + Giáo án để thêm bài tập', () => {
+    const mockRoutines: Routine[] = [
+      { id: 'r1', name: 'Ngày ngực', exerciseIds: [] },
+      { id: 'r2', name: 'Ngày lưng', exerciseIds: [] },
+    ];
+
+    renderWithProviders(<LibraryPage />, { initialRoutines: mockRoutines });
+
+    const routineSelect = screen.getByLabelText('Giáo án đang chọn');
+    expect(routineSelect).not.toBeDisabled();
+    expect(routineSelect).toHaveValue('r1');
+
+    const routineButtons = screen.getAllByRole('button', { name: '+ Giáo án' });
+    expect(routineButtons[0]).not.toBeDisabled();
+
+    fireEvent.click(routineButtons[0]);
+
+    const saved = localStorage.getItem('workout-routines');
+    expect(saved).toBeTruthy();
+    const parsed = JSON.parse(saved || '[]');
+    const updated = parsed.find((r: Routine) => r.id === 'r1');
+    expect(updated.exerciseIds).toContain('e1');
   });
 });

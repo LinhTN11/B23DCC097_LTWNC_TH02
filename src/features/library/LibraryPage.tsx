@@ -7,14 +7,17 @@ import type { Exercise } from '../../types';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useSessionStore } from '../session/useSessionStore';
 import { useSavedStore } from '../saved/useSavedStore';
+import { useRoutines, useRoutineDispatch } from '../routines/RoutineContext';
 import { ExerciseRow } from './ExerciseRow';
 
 interface ItemData {
   items: Exercise[];
   savedIdsSet: Set<string>;
+  isRoutineDisabled: boolean;
   onStart: (exercise: Exercise, index: number) => void;
   onToggleSave: (exercise: Exercise) => void;
   onAddToSession: (exercise: Exercise) => void;
+  onAddToRoutine: (exercise: Exercise) => void;
 }
 
 const Row = memo(function Row({ index, style, data }: ListChildComponentProps<ItemData>) {
@@ -28,9 +31,11 @@ const Row = memo(function Row({ index, style, data }: ListChildComponentProps<It
       index={index}
       style={style}
       isSaved={isSaved}
+      isRoutineDisabled={data.isRoutineDisabled}
       onStart={(ex) => data.onStart(ex, index)}
       onToggleSave={data.onToggleSave}
       onAddToSession={data.onAddToSession}
+      onAddToRoutine={data.onAddToRoutine}
     />
   );
 });
@@ -39,9 +44,19 @@ export function LibraryPage() {
   const [keyword, setKeyword] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'default' | 'name-asc' | 'duration-asc'>('default');
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string>('');
+
+  const routines = useRoutines();
+  const dispatch = useRoutineDispatch();
 
   const savedIds = useSavedStore((s) => s.ids);
   const savedIdsSet = useMemo(() => new Set(savedIds), [savedIds]);
+
+  const activeRoutineId = useMemo(() => {
+    if (routines.length === 0) return '';
+    const found = routines.find((r) => r.id === selectedRoutineId);
+    return found ? found.id : routines[0].id;
+  }, [routines, selectedRoutineId]);
 
   const debouncedKeyword = useDebounce(keyword, 300);
 
@@ -56,6 +71,10 @@ export function LibraryPage() {
   const handleSortChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setSortBy(e.target.value as 'default' | 'name-asc' | 'duration-asc');
   };
+
+  const handleRoutineSelect = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
+    setSelectedRoutineId(e.target.value);
+  }, []);
 
   const filteredExercises = useMemo(() => {
     let list = EXERCISES;
@@ -99,15 +118,38 @@ export function LibraryPage() {
     useSessionStore.getState().addToSession(exercise);
   }, []);
 
+  const handleAddToRoutine = useCallback(
+    (exercise: Exercise) => {
+      if (!activeRoutineId) return;
+      dispatch({
+        type: 'addExercise',
+        payload: { routineId: activeRoutineId, exerciseId: exercise.id },
+      });
+    },
+    [activeRoutineId, dispatch],
+  );
+
+  const isRoutineDisabled = routines.length === 0 || !activeRoutineId;
+
   const itemData = useMemo<ItemData>(
     () => ({
       items: filteredExercises,
       savedIdsSet,
+      isRoutineDisabled,
       onStart: handleStart,
       onToggleSave: handleToggleSave,
       onAddToSession: handleAddToSession,
+      onAddToRoutine: handleAddToRoutine,
     }),
-    [filteredExercises, savedIdsSet, handleStart, handleToggleSave, handleAddToSession],
+    [
+      filteredExercises,
+      savedIdsSet,
+      isRoutineDisabled,
+      handleStart,
+      handleToggleSave,
+      handleAddToSession,
+      handleAddToRoutine,
+    ],
   );
 
   return (
@@ -154,6 +196,26 @@ export function LibraryPage() {
             <option value="default">Mặc định</option>
             <option value="name-asc">Tên A–Z</option>
             <option value="duration-asc">Thời lượng tăng dần</option>
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="routine-select">Giáo án đang chọn</label>
+          <select
+            id="routine-select"
+            value={activeRoutineId}
+            onChange={handleRoutineSelect}
+            disabled={routines.length === 0}
+          >
+            {routines.length === 0 ? (
+              <option value="">(Chưa có giáo án)</option>
+            ) : (
+              routines.map((routine) => (
+                <option key={routine.id} value={routine.id}>
+                  {routine.name}
+                </option>
+              ))
+            )}
           </select>
         </div>
       </section>

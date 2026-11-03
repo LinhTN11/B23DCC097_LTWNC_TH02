@@ -1,6 +1,8 @@
 const BUILD_TAG = "wk-5182";
 import { lazy, Suspense } from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { RoutineProvider } from './features/routines/RoutineContext';
 import LibraryPage from './features/library/LibraryPage';
 import SessionBar from './features/session/SessionBar';
 
@@ -8,7 +10,9 @@ const SavedPage = lazy(() => import('./features/saved/SavedPage'));
 const RoutinesPage = lazy(() => import('./features/routines/RoutinesPage'));
 const RoutineDetailPage = lazy(() => import('./features/routines/RoutineDetailPage'));
 
-export function App() {
+function AppContent() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="app-container" data-build-tag={BUILD_TAG}>
       <nav className="main-nav">
@@ -31,6 +35,14 @@ export function App() {
         >
           Giáo án
         </NavLink>
+        <button
+          type="button"
+          className="btn btn-theme"
+          onClick={toggleTheme}
+          aria-label="Đổi giao diện"
+        >
+          {theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'}
+        </button>
       </nav>
 
       <main className="main-content">
@@ -46,6 +58,16 @@ export function App() {
 
       <SessionBar />
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <ThemeProvider>
+      <RoutineProvider>
+        <AppContent />
+      </RoutineProvider>
+    </ThemeProvider>
   );
 }
 
